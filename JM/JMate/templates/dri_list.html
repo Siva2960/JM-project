@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            position: relative;
+            width: 100%;
+            height: 20vh;
+            overflow: hidden;
+        }
+
+        header video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: auto;
+            min-height: 100%;
+            object-fit: cover;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 1;
+        }
+
+        .body-section {
+            width: 100%;
+            height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f9f9f9;
+            flex-direction: column;
+            padding: 40px 20px;
+        }
+
+        .driver-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 350px;
+            margin: 0 auto;
+        }
+
+        .driver-list button {
+            padding: 15px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .driver-list button:hover {
+            transform: translateY(-3px) scale(1.03);
+            background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+        }
+
+        .driver-list button::after {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 5px;
+            background: white;
+            left: 0;
+            bottom: 0;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .driver-list button:hover::after {
+            transform: scaleX(1);
+        }
+
+        h2 {
+            margin-bottom: 30px;
+            font-size: 2rem;
+            color: #333;
+        }
+
+        ul {
+            margin-top: 30px;
+            list-style: none;
+            padding: 0;
+            color: #555;
+        }
+
+        li {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <video autoplay muted loop>
+            <source src="{% static 'head.mp4' %}" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="overlay"></div>
+    </header>
+
+    <div class="body-section">
+        <h2>Select a Vehicle Type</h2>
+        <div class="driver-list">
+            <p>_____note: "drivers, near 5Km only"____</p>
+            <button onclick="window.location.href='{% url 'find_all_drivers' %}'">🚘 All Drivers</button>
+            <button onclick="window.location.href='{% url 'find_car_drivers' %}'">🚗 Car Drivers</button>
+            <button onclick="window.location.href='{% url 'find_auto_drivers' %}'">🛺 Auto Drivers</button>
+            <button onclick="window.location.href='{% url 'find_bike_drivers' %}'">🏍️ Bike Drivers</button>
+        </div>
+
+        {% if drivers %}
+            <ul>
+                {% for driver in drivers %}
+                    <li>{{ driver.name }} - {{ driver.vehicle_type }} - {{ driver.distance }} km</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+
+        {% endif %}
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% load static %}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Start Ride</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      height: 20%;
+    }
+
+    header video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    main {
+      height: 80%;
+      padding: 15px;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+
+    #map {
+      height: 400px;
+      margin-top: 20px;
+    }
+
+    #distanceDisplay {
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    #finishRideBtn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: green;
+      color: white;
+      border: none;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #passengerName {
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <video autoplay muted loop>
+    <source src="{% static 'head.mp4' %}" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+</header>
+
+<main>
+  <!-- Display passenger details -->
+  <div id="passengerName">
+    <strong>Passenger Name:</strong> {{ passenger_name }}<br>
+    <strong>Passenger Number:</strong> {{ passenger_number }}
+  </div>
+
+  <div id="distanceDisplay"></div>
+  <div id="map"></div>
+<form method="POST" action="{% url 'finish_ride' passenger.id %}">
+
+  {% csrf_token %}
+  <button id="finishRideBtn" type="submit">Finish Ride</button>
+</form>
+</main>
+
+<script>
+  const map = L.map('map').setView([{{ from_lat }}, {{ from_lon }}], 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18
+  }).addTo(map);
+
+  // Add the start and destination points to the map
+  const start = L.latLng({{ from_lat }}, {{ from_lon }});
+  const destination = L.latLng({{ to_lat }}, {{ to_lon }});
+
+  // Add markers for start and destination locations
+  L.marker(start).addTo(map).bindPopup("Start: {{ passenger_name }}").openPopup();
+  L.marker(destination).addTo(map).bindPopup("Destination").openPopup();
+
+  // Add the route to the map
+  L.Routing.control({
+    waypoints: [start, destination],
+    routeWhileDragging: false
+  }).addTo(map);
+
+  // Calculate and display the distance
+  function haversine(lat1, lon1, lat2, lon2) {
+    const toRad = deg => deg * Math.PI / 180;
+    const R = 6371; // Radius of Earth in km
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return (R * c).toFixed(2); // Distance in km
+  }
+
+  // Display the distance
+  const distance = haversine({{ from_lat }}, {{ from_lon }}, {{ to_lat }}, {{ to_lon }});
+  document.getElementById('distanceDisplay').innerText =
+    `Distance: ${distance} km`;
+</script>
+
+</body>
+</html>

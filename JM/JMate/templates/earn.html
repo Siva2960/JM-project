@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JMate - Home</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            height: 20%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        header h1 {
+            position: absolute;
+            color: #fff;
+            font-size: 2rem;
+            margin: 0;
+            z-index: 1;
+        }
+
+        main {
+            height: 30%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .top-destinations {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .top-destinations div {
+            text-align: center;
+            margin: 0 50px; /* 50px space between each pincode */
+            font-size: 1.2rem;
+            padding: 20px 40px; /* Add padding to make the oval shape */
+            background-color: #4CAF50; /* Green background */
+            color: white;
+            border-radius: 50px; /* This creates the oval shape */
+            width: auto;
+            height: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .top-destinations div:first-child {
+            margin-left: 0; /* Remove left margin for the first pincode */
+        }
+
+        .top-destinations div:last-child {
+            margin-right: 0; /* Remove right margin for the last pincode */
+        }
+
+        h2 {
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+        }
+
+        p {
+            margin: 0;
+        }
+        .top-destinations {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+    </style>
+</head>
+<body>
+
+<header>
+    <video autoplay muted loop>
+        <source src="/static/head.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+</header>
+<main>
+    {% if top_destinations %}
+<div class="top-destinations">
+    {% for dest in top_destinations %}
+    <a href="?pincode={{ dest.pincode }}" style="text-decoration: none;">
+        <div style="
+            text-align: center;
+            margin: 0 20px;
+            font-size: 1.2rem;
+            padding: 20px 40px;
+            background-color: {% cycle '#4CAF50' '#2196F3' '#FF9800' %};
+            color: white;
+            border-radius: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+            <p style="margin: 0;">{{ dest.pincode }} - {{ dest.count }}</p>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+</main>
+<!-- Add this just below the previous <main> content -->
+<section style="padding: 20px; flex-grow: 1; overflow-y: auto; max-height: 45vh;">
+    <h2>Passenger List</h2>
+
+    <!-- Search and Sort -->
+    <div style="margin-bottom: 15px;">
+        <input id="searchInput" type="text" placeholder="Search by pincode or area..." style="padding: 8px; width: 250px;" onkeyup="filterPassengers()">
+        <select id="sortSelect" onchange="sortPassengers()" style="padding: 8px;">
+            <option value="none">Sort by</option>
+            <option value="asc">Distance: Low to High</option>
+            <option value="desc">Distance: High to Low</option>
+        </select>
+    </div>
+
+    <!-- Table -->
+    <table border="1" id="passengerTable" style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background-color: #f2f2f2;">
+                <th>Name</th>
+                <th>Phone Number</th>
+                <th>From Location</th>
+                <th>To Location</th>
+                <th>To Pincode</th>
+                <th>Distance (km)<br>from you</th>
+            </tr>
+        </thead>
+        <tbody>
+    {% for entry in passengers %}
+    <tr>
+        <td>{{ entry.name }}</td>
+        <td>{{ entry.phone_number }}</td>
+        <td>{{ entry.from_area }}</td>
+        <td>{{ entry.to_area }}</td>
+        <td>{{ entry.to_pincode }}</td>
+        <td>{{ entry.distance }} km</td>
+    </tr>
+    {% endfor %}
+</tbody>
+
+    </table>
+</section>
+
+<script>
+function filterPassengers() {
+    const input = document.getElementById("searchInput").value.toLowerCase();
+    const rows = document.querySelectorAll("#passengerTable tbody tr");
+
+    rows.forEach(row => {
+        const area = row.cells[3].textContent.toLowerCase(); // to_area
+        const pincode = row.cells[4].textContent.toLowerCase(); // to_pincode
+
+        if (area.includes(input) || pincode.includes(input)) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+}
+
+function sortPassengers() {
+    const table = document.getElementById("passengerTable");
+    const rows = Array.from(table.tBodies[0].rows);
+    const sortValue = document.getElementById("sortSelect").value;
+
+    if (sortValue === "none") return;
+
+    rows.sort((a, b) => {
+        const distA = parseFloat(a.cells[5].textContent) || 0;
+        const distB = parseFloat(b.cells[5].textContent) || 0;
+        return sortValue === "asc" ? distA - distB : distB - distA;
+    });
+
+    rows.forEach(row => table.tBodies[0].appendChild(row));
+}
+</script>
+<!-- Start Ride Button in bottom-right corner -->
+<button onclick="startRide()" style="
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    border-radius: 30px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    z-index: 1000;
+    transition: transform 0.2s;
+" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+    Start Ride
+</button>
+
+<script>
+function startRide() {
+    window.location.href = "/save/";
+}
+</script>
+
+
+
+
+</body>
+</html>

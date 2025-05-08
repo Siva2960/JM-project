@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pickup Page</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 400px; width: 100%; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Pickup passanger</h1>
+    <p>Passenger Name: {{ passenger.name }}</p>
+
+    <div id="map"></div>
+    <div style="margin-top: 20px;">
+    <form method="post" action="{% url 'start_ride_page' passenger.id %}">
+
+    {% csrf_token %}
+    <button type="submit">Start Ride</button>
+</form>
+
+   <a href="{% url 'pickup_another' %}">
+    <button type="button">Pickup Another</button>
+</a>
+
+</div>
+
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
+
+    <script>
+    const passengerLat = {{ passenger_lat }};
+    const passengerLon = {{ passenger_lon }};
+
+    const map = L.map('map').setView([passengerLat, passengerLon], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+    }).addTo(map);
+
+    let routingControl;
+    let arrowMarker;
+    let previousLatLng = null;
+
+    function calculateBearing(fromLatLng, toLatLng) {
+        const lat1 = fromLatLng.lat * Math.PI / 180;
+        const lat2 = toLatLng.lat * Math.PI / 180;
+        const dLon = (toLatLng.lng - fromLatLng.lng) * Math.PI / 180;
+
+        const y = Math.sin(dLon) * Math.cos(lat2);
+        const x = Math.cos(lat1) * Math.sin(lat2) -
+                  Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+        const brng = Math.atan2(y, x) * 180 / Math.PI;
+        return (brng + 360) % 360;
+    }
+
+    function updateDriverLocation(driverLat, driverLon) {
+        const currentLatLng = L.latLng(driverLat, driverLon);
+
+        // Rotate arrow
+        if (previousLatLng) {
+            const bearing = calculateBearing(previousLatLng, currentLatLng);
+            if (arrowMarker) {
+                arrowMarker.setLatLng(currentLatLng);
+                arrowMarker.setRotationAngle(bearing);
+            } else {
+                arrowMarker = L.marker(currentLatLng, {
+                    icon: L.icon({
+                        iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    }),
+                    rotationAngle: bearing,
+                    rotationOrigin: 'center center'
+                }).addTo(map);
+            }
+        } else {
+            // First time
+            arrowMarker = L.marker(currentLatLng, {
+                icon: L.icon({
+                    iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                }),
+                rotationOrigin: 'center center'
+            }).addTo(map);
+        }
+
+        previousLatLng = currentLatLng;
+
+        // Update or create route
+        if (routingControl) {
+            routingControl.setWaypoints([
+                currentLatLng,
+                L.latLng(passengerLat, passengerLon)
+            ]);
+        } else {
+            routingControl = L.Routing.control({
+                waypoints: [
+                    currentLatLng,
+                    L.latLng(passengerLat, passengerLon)
+                ],
+                routeWhileDragging: false,
+                createMarker: () => null
+            }).addTo(map);
+        }
+    }
+
+    // Track driver in real time
+    if ("geolocation" in navigator) {
+        navigator.geolocation.watchPosition(function (position) {
+            const driverLat = position.coords.latitude;
+            const driverLon = position.coords.longitude;
+            updateDriverLocation(driverLat, driverLon);
+        }, function (error) {
+            alert('Error getting real-time location: ' + error.message);
+        }, {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 5000
+        });
+    } else {
+        alert("Geolocation is not supported by this browser.");
+    }
+</script>
+
+
+</body>
+</html>

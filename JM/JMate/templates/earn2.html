@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Support Form</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+    }
+
+    header {
+      height: 20vh;
+      overflow: hidden;
+    }
+
+    header video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .container {
+      height: 80vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 10px;
+    }
+
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      max-width: 500px;
+      width: 100%;
+    }
+
+    input[type="tel"],
+    input[type="text"],
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    #map {
+      height: 200px;
+      width: 100%;
+      margin-bottom: 10px;
+      border-radius: 8px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 10px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .submit-btn:disabled {
+      background-color: #aaa;
+      cursor: not-allowed;
+    }
+
+    #earn {
+      margin-top: 20px;
+      padding: 10px 30px;
+      font-size: 18px;
+      background-color: #339DFF;
+      color: white;
+      border: none;
+      border-radius: 16px;
+      cursor: pointer;
+    }
+
+    #getLocation {
+      cursor: pointer;
+      font-size: 1.5rem;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <video autoplay muted loop playsinline>
+    <source src="static/head.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
+</header>
+
+<div class="container">
+  <form method="POST" action="{% url 'save_support_info' %}">
+    {% csrf_token %}
+    <h2>{{ data }}</h2>
+
+    <label for="number">Enter Phone Number:</label>
+    <input type="text" name="number" value="{{ number }}" readonly>
+
+    <label for="vehicle_type">Select Vehicle Type:</label>
+    <select id="vehicle_type" name="vehicle_type" required>
+      <option value="">-- Select --</option>
+      <option value="Car">Car</option>
+      <option value="Bike">Bike</option>
+      <option value="Auto">Auto</option>
+    </select>
+
+    <label for="support_info">From Location (Area name / URL / Pincode):</label>
+    <div style="display: flex; align-items: center;">
+      <input type="text" id="support_info" name="support_info" placeholder="Enter or select location" required />
+      <span id="getLocation" title="Use current location">📍</span>
+    </div>
+
+    <div id="map"></div>
+
+    <label for="to_location">To Location (Area / Pincode / URL):</label>
+    <input type="text" id="to_location" name="to_location" placeholder="Enter destination" required />
+
+    <input type="hidden" id="support_lat" name="support_lat" />
+    <input type="hidden" id="support_lon" name="support_lon" />
+    <input type="hidden" id="support_pincode" name="support_pincode" />
+    <input type="hidden" id="support_area" name="support_area" />
+
+    <input type="hidden" id="to_lat" name="to_lat" />
+    <input type="hidden" id="to_lon" name="to_lon" />
+    <input type="hidden" id="to_pincode" name="to_pincode" />
+    <input type="hidden" id="to_area" name="to_area" />
+
+    <button type="submit" class="submit-btn" id="submitBtn" disabled>Submit</button>
+  </form>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+  const supportInput = document.getElementById("support_info");
+  const toInput = document.getElementById("to_location");
+  const getLocationBtn = document.getElementById("getLocation");
+
+  const supportLat = document.getElementById("support_lat");
+  const supportLon = document.getElementById("support_lon");
+  const supportPin = document.getElementById("support_pincode");
+  const supportArea = document.getElementById("support_area");
+
+  const toLat = document.getElementById("to_lat");
+  const toLon = document.getElementById("to_lon");
+  const toPin = document.getElementById("to_pincode");
+  const toArea = document.getElementById("to_area");
+
+  const submitBtn = document.getElementById("submitBtn");
+
+  const map = L.map('map').setView([20.5937, 78.9629], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  let marker;
+
+  function checkFields() {
+    if (
+      supportLat.value && supportLon.value && supportPin.value && supportArea.value &&
+      toLat.value && toLon.value && toPin.value && toArea.value
+    ) {
+      submitBtn.disabled = false;
+    } else {
+      submitBtn.disabled = true;
+    }
+  }
+
+  function fetchLocationData(query, isTo = false) {
+    const cleanQuery = encodeURIComponent(query.trim());
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${cleanQuery}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.length > 0) {
+          const d = data[0];
+          const lat = d.lat;
+          const lon = d.lon;
+          const postcode = d.address?.postcode || "N/A";
+          const area = d.address?.suburb || d.address?.village || d.address?.town || d.address?.city || "Unknown";
+
+          if (isTo) {
+            toLat.value = lat;
+            toLon.value = lon;
+            toPin.value = postcode;
+            toArea.value = area;
+          } else {
+            supportLat.value = lat;
+            supportLon.value = lon;
+            supportPin.value = postcode;
+            supportArea.value = area;
+
+            map.setView([lat, lon], 15);
+            if (marker) marker.setLatLng([lat, lon]);
+            else marker = L.marker([lat, lon]).addTo(map);
+          }
+          checkFields();
+        } else {
+          alert("Location not found: " + query);
+        }
+      });
+  }
+
+  map.on('click', function (e) {
+    const { lat, lng } = e.latlng;
+    supportInput.value = `${lat}, ${lng}`;
+    fetchLocationData(`${lat},${lng}`);
+  });
+
+  getLocationBtn.addEventListener('click', () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        supportInput.value = `${lat}, ${lon}`;
+        fetchLocationData(`${lat},${lon}`);
+      });
+    } else {
+      alert("Geolocation not supported.");
+    }
+  });
+
+  supportInput.addEventListener('blur', () => {
+    if (supportInput.value.trim() !== "") {
+      fetchLocationData(supportInput.value, false);
+    }
+  });
+
+  toInput.addEventListener('blur', () => {
+    if (toInput.value.trim() !== "") {
+      fetchLocationData(toInput.value, true);
+    }
+  });
+</script>
+</body>
+</html>

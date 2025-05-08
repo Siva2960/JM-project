@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passenger List</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+
+        .container { display: flex; flex-direction: column; height: 100vh; }
+
+        header {
+            position: relative;
+            width: 100%;
+            height: 20vh;
+            overflow: hidden;
+        }
+
+        header video {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%; height: auto;
+            min-height: 100%; object-fit: cover;
+        }
+
+        .overlay {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.3); z-index: 1;
+        }
+
+        .header-content {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            color: white; font-size: 1.5rem; font-weight: bold;
+            text-align: center; z-index: 2;
+        }
+
+        .body-section {
+            width: 100%;
+            height: 80vh;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .passenger-item {
+            background-color: white;
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .accept-btn {
+            padding: 8px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .accept-btn:disabled {
+            background-color: #ccc;
+        }
+
+        .pickup-btn {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            display: none;
+            margin-top: 10px;
+        }
+
+        .details {
+            display: none;
+            margin-top: 10px;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <video autoplay muted loop>
+                <source src="/static/head.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+            <div class="overlay"></div>
+            <div class="header-content">
+                <p>JOURNEY MATE</p>
+            </div>
+        </header>
+
+        <div class="body-section">
+            {% for passenger in passengers %}
+            <div class="passenger-item" data-passenger-id="{{ passenger.id }}">
+                <div>
+                    <p><strong>Area:</strong> {{ passenger.area_name }}</p>
+                    <p><strong>To Location:</strong> {{ passenger.to_location }}</p>
+                    <p><strong>Distance:</strong> {{ passenger.distance }} km</p>
+                </div>
+
+                <button class="accept-btn" onclick="acceptRequest(this, '{{ passenger.id }}')">Accept</button>
+                <button class="pickup-btn" onclick="pickupPassenger('{{ passenger.id }}')">Pickup</button>
+
+                <div class="details">
+                    <p><strong>Name:</strong> {{ passenger.name }}</p>
+                    <p><strong>Phone:</strong> {{ passenger.number }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        const driverId = "{{ request.user.id }}";  // Can be phone number or user ID
+
+        function acceptRequest(button, passengerId) {
+            fetch(`/accept-passenger/${passengerId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ driver_id: driverId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const item = button.closest('.passenger-item');
+                    item.querySelector('.pickup-btn').style.display = 'inline-block';
+                    item.querySelector('.details').style.display = 'block';
+                    button.disabled = true;
+                    button.textContent = 'Accepted';
+                    button.style.backgroundColor = '#ccc';
+                } else {
+                    alert(data.error || 'Failed to accept passenger.');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Something went wrong.');
+            });
+        }
+
+        function pickupPassenger(passengerId) {
+            window.location.href = `/pickup-page/${passengerId}/`;
+        }
+    </script>
+</body>
+</html>

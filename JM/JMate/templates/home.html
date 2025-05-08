@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            position: relative;
+            width: 100%;
+            height: 30vh;
+            overflow: hidden;
+        }
+
+        header video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: auto;
+            min-height: 100%;
+            object-fit: cover;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 1;
+        }
+
+        .header-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            z-index: 2;
+        }
+
+        .auth-buttons {
+            position: absolute;
+            top: 50%;
+            right: 30px;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 2;
+        }
+
+        .auth-buttons button {
+            background-color: rgba(255, 255, 255, 0.85);
+            border: none;
+            padding: 10px 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: 0.3s;
+        }
+
+        .auth-buttons button:hover {
+            background-color: white;
+        }
+
+        .body-section {
+            width: 100%;
+            height: 70vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background-color: #f5f5f5;
+            padding: 20px;
+            background-image: url("{% static 'home.png' %}");
+            background-size: cover;
+            background-position: center;
+        }
+
+        .body-text {
+            color: #333;
+            font-size: 1.5rem;
+            line-height: 2.2rem;
+            font-weight: bold;
+            background-color: white;
+            padding: 30px 50px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .body-text h1 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+
+        .body-text h3 {
+            margin-bottom: 10px;
+        }
+
+        /* 💚 SAVE NATURE Animation */
+        .save-nature {
+            color: green;
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                text-shadow: 0 0 5px green, 0 0 10px limegreen;
+                transform: scale(1);
+            }
+            50% {
+                text-shadow: 0 0 20px lime, 0 0 30px greenyellow;
+                transform: scale(1.05);
+            }
+        }
+    </style>
+</head>
+<body>
+{% load static %}
+<div class="container">
+    <header>
+        <video autoplay muted loop>
+            <source src="/static/head.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="overlay"></div>
+
+        <div class="auth-buttons">
+            <!-- ✅ Replace old Signup button -->
+<button onclick="openSignup()">Signup</button>
+            <button onclick="openLogin()">Login</button>
+        </div>
+    </header>
+
+    <div class="body-section">
+        <div class="body-text">
+            <h1>WELCOME TO JOURNEYMATE</h1><br>
+            <h3>Here Help & Earn</h3><br>
+            <h3>Reduce Air Pollution</h3><br>
+            <h1 class="save-nature">SAVE NATURE</h1>
+        </div>
+    </div>
+</div>
+
+
+<!-- ✅ Add this modal at the very bottom before </body> -->
+<div id="signupModal" style="display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+  <div style="background: white; margin: 50px auto; padding: 30px; border-radius: 12px; width: 300px; position: relative;">
+    <h2 style="text-align: center;">Signup</h2>
+    <form method="POST" action="{% url 'Signup' %}" onsubmit="return validateSignup()" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="text" name="name" placeholder="Name" required style="width: 100%; margin: 8px 0; padding: 8px;" />
+      <input type="text" name="number" placeholder="Phone Number" required style="width: 100%; margin: 8px 0; padding: 8px;" />
+      <select name="type" required style="width: 100%; margin: 8px 0; padding: 8px;">
+        <option value="">Select Type</option>
+        <option value="driver">Driver</option>
+        <option value="passenger">Passenger</option>
+      </select>
+      <input type="password" id="password" name="password" placeholder="Password" required style="width: 100%; margin: 8px 0; padding: 8px;" />
+      <input type="password" id="confirm_password" placeholder="Confirm Password" required style="width: 100%; margin: 8px 0; padding: 8px;" />
+      <button type="submit" style="width: 100%; padding: 10px; background-color: green; color: white; border: none; border-radius: 6px;">Signup</button>
+    </form>
+    <button onclick="closeSignup()" style="position: absolute; top: 5px; right: 10px; background: none; border: none; font-size: 18px; color: red;">✖</button>
+  </div>
+</div>
+
+<!-- Login Modal -->
+<div id="loginModal" style="display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+  <div style="background: white; margin: 50px auto; padding: 30px; border-radius: 12px; width: 300px; position: relative;">
+    <h2 style="text-align: center;">Login</h2>
+    <form method="POST" action="{% url 'UserLogin' %}">
+      {% csrf_token %}
+      <input type="text" name="number" placeholder="Phone Number" required style="width: 100%; margin: 8px 0; padding: 8px;" />
+      <input type="password" name="password" placeholder="Password" required style="width: 100%; margin: 8px 0; padding: 8px;" />
+      <button type="submit" style="width: 100%; padding: 10px; background-color: blue; color: white; border: none; border-radius: 6px;">Login</button>
+    </form>
+    <button onclick="closeLogin()" style="position: absolute; top: 5px; right: 10px; background: none; border: none; font-size: 18px; color: red;">✖</button>
+  </div>
+</div>
+
+
+<script>
+  function openSignup() {
+    document.getElementById('signupModal').style.display = 'block';
+  }
+
+  function closeSignup() {
+    document.getElementById('signupModal').style.display = 'none';
+  }
+
+  function validateSignup() {
+    const pwd = document.getElementById("password").value;
+    const cpwd = document.getElementById("confirm_password").value;
+
+    if (pwd.length < 8 || !/[A-Za-z]/.test(pwd) || !/[0-9]/.test(pwd)) {
+      alert("Password must be at least 8 characters and include letters and numbers.");
+      return false;
+    }
+
+    if (pwd !== cpwd) {
+      alert("Passwords do not match!");
+      return false;
+    }
+
+    return true;
+  }
+</script>
+<script>
+  // Open Signup Modal
+  function openSignup() {
+    document.getElementById('signupModal').style.display = 'block';
+  }
+
+  // Close Signup Modal
+  function closeSignup() {
+    document.getElementById('signupModal').style.display = 'none';
+  }
+
+  // Open Login Modal
+  function openLogin() {
+    document.getElementById('loginModal').style.display = 'block';
+  }
+
+  // Close Login Modal
+  function closeLogin() {
+    document.getElementById('loginModal').style.display = 'none';
+  }
+</script>
+
+
+</body>
+</html>
